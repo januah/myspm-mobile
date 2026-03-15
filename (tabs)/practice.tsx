@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import Colors from '@/constants/colors';
+import { colors } from '@/constants/colors';
 
 const SUBJECTS = [
   { id: 'math', label: 'Mathematics', icon: 'calculator' as const, color: Colors.subjectMath },

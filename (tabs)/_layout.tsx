@@ -9,7 +9,7 @@ import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import Colors from '@/constants/colors';
+import { colors } from '@/constants/colors';
 
 function NativeTabLayout() {
   const { t } = useTranslation();
