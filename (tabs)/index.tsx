@@ -2,6 +2,7 @@ import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -10,9 +11,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
+import { useCurrentUser, useSubjectProgress, useFollowedTeachersPosts } from '@/lib/hooks/useUser';
+import { useSchoolLeaderboard } from '@/lib/hooks/useLeaderboard';
 
 const STUDY_PLAN = [
   { subject: 'Mathematics', topic: 'Probability', count: 10, color: Colors.subjectMath },
@@ -20,28 +22,19 @@ const STUDY_PLAN = [
   { subject: 'Sejarah', topic: 'Kemerdekaan', count: 8, color: Colors.subjectSejarah },
 ];
 
-const SUBJECT_PROGRESS = [
-  { name: 'Math', score: 72, color: Colors.subjectMath },
-  { name: 'Chemistry', score: 61, color: Colors.subjectChem },
-  { name: 'Sejarah', score: 80, color: Colors.subjectSejarah },
-  { name: 'English', score: 85, color: Colors.subjectEnglish },
-];
-
-const TOP_STUDENTS = [
-  { rank: 1, name: 'Sarah', xp: 8420, avatar: 'S' },
-  { rank: 2, name: 'Aiman', xp: 7910, avatar: 'A' },
-  { rank: 3, name: 'Daniel', xp: 7300, avatar: 'D' },
-];
-
-const TEACHER_POSTS = [
-  { teacher: 'Mr. Lim', title: 'Add Maths Integration Practice', time: '2h ago' },
-  { teacher: 'Pn. Farah', title: 'Predicted Chemistry Paper', time: '5h ago' },
-];
-
 export default function HomeScreen() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
+
+  const { data: user } = useCurrentUser();
+  const { data: subjectProgress = [], isLoading: progressLoading } = useSubjectProgress();
+  const { data: schoolLeaders = [], isLoading: leaderboardLoading } = useSchoolLeaderboard();
+  const { data: teacherPosts = [], isLoading: postsLoading } = useFollowedTeachersPosts();
+
+  const displayName = user?.name?.split(' ')[0] || 'User';
+  const displayStreak = user?.streak || 0;
+  const displayXP = user?.totalXp || 0;
+  const topStudents = schoolLeaders.slice(0, 3);
 
   return (
     <ScrollView
@@ -51,20 +44,20 @@ export default function HomeScreen() {
     >
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View>
-          <Text style={styles.greeting}>{t('home.greeting')}</Text>
+          <Text style={styles.greeting}>Good evening, {displayName}</Text>
           <View style={styles.streakRow}>
             <View style={styles.streakBadge}>
               <MaterialCommunityIcons name="fire" size={14} color={Colors.streak} />
-              <Text style={styles.streakText}>{t('home.streakBadge')}</Text>
+              <Text style={styles.streakText}>{displayStreak} day streak</Text>
             </View>
             <View style={styles.xpBadge}>
               <MaterialCommunityIcons name="star-four-points" size={14} color={Colors.xp} />
-              <Text style={styles.xpText}>{t('home.xpBadge')}</Text>
+              <Text style={styles.xpText}>{displayXP.toLocaleString()} XP</Text>
             </View>
           </View>
         </View>
         <View style={styles.avatarSmall}>
-          <Text style={styles.avatarSmallText}>A</Text>
+          <Text style={styles.avatarSmallText}>{displayName.charAt(0)}</Text>
         </View>
       </View>
 
@@ -73,27 +66,27 @@ export default function HomeScreen() {
           <View style={[styles.quickIcon, { backgroundColor: Colors.primary + '12' }]}>
             <Ionicons name="play" size={22} color={Colors.primary} />
           </View>
-          <Text style={styles.quickLabel}>{t('home.practice')}</Text>
+          <Text style={styles.quickLabel}>Practice</Text>
         </Pressable>
         <Pressable style={styles.quickBtn} onPress={() => router.push('/exam-mode')}>
           <View style={[styles.quickIcon, { backgroundColor: Colors.accent + '12' }]}>
             <MaterialCommunityIcons name="file-document-edit-outline" size={22} color={Colors.accent} />
           </View>
-          <Text style={styles.quickLabel}>{t('home.exam')}</Text>
+          <Text style={styles.quickLabel}>Exam</Text>
         </Pressable>
         <Pressable style={styles.quickBtn} onPress={() => router.push('/(tabs)/camera')}>
           <View style={[styles.quickIcon, { backgroundColor: Colors.xp + '12' }]}>
             <MaterialCommunityIcons name="camera-outline" size={22} color={Colors.xp} />
           </View>
-          <Text style={styles.quickLabel}>{t('home.scan')}</Text>
+          <Text style={styles.quickLabel}>Scan</Text>
         </Pressable>
       </View>
 
       <View style={styles.studyPlanCard}>
         <View style={styles.studyPlanHeader}>
           <View>
-            <Text style={styles.cardTitle}>{t('home.studyPlan')}</Text>
-            <Text style={styles.cardSubtitle}>{t('home.aiPersonalized')}</Text>
+            <Text style={styles.cardTitle}>Today's Study Plan</Text>
+            <Text style={styles.cardSubtitle}>AI-personalized for you</Text>
           </View>
           <MaterialCommunityIcons name="robot-outline" size={20} color={Colors.primary} />
         </View>
@@ -107,76 +100,90 @@ export default function HomeScreen() {
           </View>
         ))}
         <Pressable style={styles.planBtn} onPress={() => router.push('/(tabs)/practice')}>
-          <Text style={styles.planBtnText}>{t('home.startPractice')}</Text>
+          <Text style={styles.planBtnText}>Start Practice</Text>
           <Feather name="arrow-right" size={16} color={Colors.textInverse} />
         </Pressable>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.progressSnapshot')}</Text>
-        <View style={styles.progressCard}>
-          {SUBJECT_PROGRESS.map((s) => (
-            <View key={s.name} style={styles.progressRow}>
-              <Text style={styles.progressLabel}>{s.name}</Text>
-              <View style={styles.progressBarOuter}>
-                <View style={[styles.progressBarInner, { width: `${s.score}%`, backgroundColor: s.color }]} />
+        <Text style={styles.sectionTitle}>Progress Snapshot</Text>
+        {progressLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <View style={styles.progressCard}>
+            {subjectProgress.map((s) => (
+              <View key={s.name} style={styles.progressRow}>
+                <Text style={styles.progressLabel}>{s.name}</Text>
+                <View style={styles.progressBarOuter}>
+                  <View style={[styles.progressBarInner, { width: `${s.score}%`, backgroundColor: s.color }]} />
+                </View>
+                <Text style={[styles.progressValue, { color: s.color }]}>{s.score}%</Text>
               </View>
-              <Text style={[styles.progressValue, { color: s.color }]}>{s.score}%</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('navigation.leaderboard')}</Text>
+          <Text style={styles.sectionTitle}>Leaderboard</Text>
           <Pressable onPress={() => router.push('/(tabs)/leaderboard')}>
-            <Text style={styles.viewAll}>{t('home.viewAll')}</Text>
+            <Text style={styles.viewAll}>View All</Text>
           </Pressable>
         </View>
-        <View style={styles.leaderboardCard}>
-          {TOP_STUDENTS.map((s) => {
-            const medalColor = s.rank === 1 ? Colors.gold : s.rank === 2 ? Colors.silver : Colors.bronze;
-            return (
-              <View key={s.rank} style={styles.leaderRow}>
-                <Text style={[styles.leaderRank, { color: medalColor }]}>#{s.rank}</Text>
-                <View style={[styles.leaderAvatar, { borderColor: medalColor }]}>
-                  <Text style={styles.leaderAvatarText}>{s.avatar}</Text>
+        {leaderboardLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <View style={styles.leaderboardCard}>
+            {topStudents.map((s) => {
+              const medalColor = s.rank === 1 ? Colors.gold : s.rank === 2 ? Colors.silver : Colors.bronze;
+              return (
+                <View key={s.rank} style={styles.leaderRow}>
+                  <Text style={[styles.leaderRank, { color: medalColor }]}>#{s.rank}</Text>
+                  <View style={[styles.leaderAvatar, { borderColor: medalColor }]}>
+                    <Text style={styles.leaderAvatarText}>{s.avatar}</Text>
+                  </View>
+                  <Text style={styles.leaderName}>{s.name}</Text>
+                  <Text style={styles.leaderXp}>{s.xp.toLocaleString()} XP</Text>
                 </View>
-                <Text style={styles.leaderName}>{s.name}</Text>
-                <Text style={styles.leaderXp}>{s.xp.toLocaleString()} XP</Text>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.teacherFeed')}</Text>
-        {TEACHER_POSTS.map((post, idx) => (
-          <Pressable key={idx} style={styles.feedCard}>
-            <View style={styles.feedAvatar}>
-              <Feather name="user" size={16} color={Colors.primary} />
-            </View>
-            <View style={styles.feedInfo}>
-              <Text style={styles.feedTeacher}>{post.teacher} <Text style={styles.feedAction}>{t('home.posted')}</Text></Text>
-              <Text style={styles.feedTitle}>{post.title}</Text>
-            </View>
-            <Text style={styles.feedTime}>{post.time}</Text>
-          </Pressable>
-        ))}
+        <Text style={styles.sectionTitle}>Teacher Feed</Text>
+        {postsLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <>
+            {teacherPosts.map((post, idx) => (
+              <Pressable key={idx} style={styles.feedCard}>
+                <View style={styles.feedAvatar}>
+                  <Feather name="user" size={16} color={Colors.primary} />
+                </View>
+                <View style={styles.feedInfo}>
+                  <Text style={styles.feedTeacher}>{post.teacher} <Text style={styles.feedAction}>posted</Text></Text>
+                  <Text style={styles.feedTitle}>{post.title}</Text>
+                </View>
+                <Text style={styles.feedTime}>{post.time}</Text>
+              </Pressable>
+            ))}
+          </>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('common.assignments')}</Text>
+        <Text style={styles.sectionTitle}>Assignments</Text>
         <View style={styles.assignmentCard}>
           <View style={[styles.assignmentDot, { backgroundColor: Colors.warning }]} />
           <View style={styles.assignmentInfo}>
-            <Text style={styles.assignmentTitle}>{t('home.assignmentTitle')}</Text>
-            <Text style={styles.assignmentDue}>{t('home.dueTomorrow')}</Text>
+            <Text style={styles.assignmentTitle}>Bahasa Melayu Essay</Text>
+            <Text style={styles.assignmentDue}>Due Tomorrow</Text>
           </View>
           <Pressable style={styles.submitBtn}>
-            <Text style={styles.submitText}>{t('common.submit')}</Text>
+            <Text style={styles.submitText}>Submit</Text>
           </Pressable>
         </View>
       </View>

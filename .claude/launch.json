@@ -5,8 +5,7 @@
       "name": "React Native (Expo)",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 8081,
-      "autoPort": true
+      "port": 8081
     },
     {
       "name": "Frontend (Vite)",

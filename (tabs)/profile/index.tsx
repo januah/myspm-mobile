@@ -1,5 +1,4 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
 import React from 'react';
 import {
   Platform,
@@ -8,40 +7,26 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/colors';
-
-const ACHIEVEMENTS = [
-  { id: '1', title: '7-Day Streak', icon: 'fire' as const, color: Colors.streak, earned: true },
-  { id: '2', title: 'Algebra Master', icon: 'school' as const, color: Colors.subjectMath, earned: true },
-  { id: '3', title: 'Top 10 School', icon: 'trophy' as const, color: Colors.gold, earned: true },
-  { id: '4', title: 'Science Whiz', icon: 'flask' as const, color: Colors.subjectScience, earned: false },
-  { id: '5', title: '100 Questions', icon: 'check-circle' as const, color: Colors.accent, earned: false },
-  { id: '6', title: 'Perfect Score', icon: 'star' as const, color: Colors.xp, earned: false },
-];
-
-const SUBJECT_PROGRESS = [
-  { name: 'Mathematics', score: 72, color: Colors.subjectMath },
-  { name: 'Chemistry', score: 61, color: Colors.subjectChem },
-  { name: 'Sejarah', score: 80, color: Colors.subjectSejarah },
-  { name: 'English', score: 85, color: Colors.subjectEnglish },
-  { name: 'Biology', score: 68, color: Colors.subjectBio },
-];
-
-const TEACHERS = [
-  { name: 'Mr. Lim Wei Hong', subject: 'Add Maths', posts: 12 },
-  { name: 'Pn. Farah Nadia', subject: 'Chemistry', posts: 8 },
-  { name: 'En. Azman bin Yusof', subject: 'Sejarah', posts: 15 },
-];
+import Colors from '@/constants/colors';
+import { useCurrentUser, useAchievements, useSubjectProgress } from '@/lib/hooks/useUser';
 
 export default function ProfileScreen() {
-  const { t } = useTranslation();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
+
+  const { data: user, isLoading: userLoading } = useCurrentUser();
+  const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
+  const { data: subjectProgress = [], isLoading: progressLoading } = useSubjectProgress();
+
+  const displayName = user?.name || 'User';
+  const displaySchool = user?.school || 'School';
+  const displayXP = user?.totalXp || 0;
+  const displayStreak = user?.streak || 0;
+  const displayQuestions = user?.questionsAnswered || 0;
 
   return (
     <ScrollView
@@ -50,11 +35,8 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>{t('profile.title')}</Text>
-        <Pressable
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('settings')}
-        >
+        <Text style={styles.title}>Profile</Text>
+        <Pressable style={styles.settingsBtn}>
           <Feather name="settings" size={22} color={Colors.textSecondary} />
         </Pressable>
       </View>
@@ -68,33 +50,36 @@ export default function ProfileScreen() {
             <Feather name="edit-2" size={12} color={Colors.textInverse} />
           </Pressable>
         </View>
-        <Text style={styles.profileName}>Aiman bin Razak</Text>
-        <Text style={styles.profileSchool}>SMK Taman Melawati</Text>
+        <Text style={styles.profileName}>{displayName}</Text>
+        <Text style={styles.profileSchool}>{displaySchool}</Text>
         <View style={styles.profileBadge}>
           <Text style={styles.profileBadgeText}>Form 5</Text>
         </View>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>7,910</Text>
+            <Text style={styles.statValue}>{displayXP.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Total XP</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>10</Text>
+            <Text style={styles.statValue}>{displayStreak}</Text>
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>243</Text>
+            <Text style={styles.statValue}>{displayQuestions}</Text>
             <Text style={styles.statLabel}>Questions</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('gamification.achievements')}</Text>
-        <View style={styles.achievementGrid}>
-          {ACHIEVEMENTS.map((a) => (
+        <Text style={styles.sectionTitle}>Achievements</Text>
+        {achievementsLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <View style={styles.achievementGrid}>
+            {achievements.map((a) => (
             <View key={a.id} style={[styles.achievementCard, !a.earned && styles.achievementLocked]}>
               <View style={[styles.achievementIcon, { backgroundColor: a.earned ? a.color + '15' : Colors.surfaceAlt }]}>
                 <MaterialCommunityIcons
@@ -110,14 +95,18 @@ export default function ProfileScreen() {
                 <Feather name="lock" size={10} color={Colors.textTertiary} style={{ marginTop: 2 }} />
               )}
             </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('common.performance') || 'Subject Performance'}</Text>
-        <View style={styles.progressCard}>
-          {SUBJECT_PROGRESS.map((s) => (
+        <Text style={styles.sectionTitle}>Subject Performance</Text>
+        {progressLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <View style={styles.progressCard}>
+            {subjectProgress.map((s) => (
             <View key={s.name} style={styles.progressRow}>
               <Text style={styles.progressLabel}>{s.name}</Text>
               <View style={styles.progressBarContainer}>
@@ -125,40 +114,39 @@ export default function ProfileScreen() {
               </View>
               <Text style={[styles.progressValue, { color: s.color }]}>{s.score}%</Text>
             </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('profile.teacher') || 'Followed Teachers'}</Text>
-        {TEACHERS.map((t) => (
-          <View key={t.name} style={styles.teacherRow}>
-            <View style={styles.teacherAvatar}>
-              <Feather name="user" size={18} color={Colors.primary} />
-            </View>
-            <View style={styles.teacherInfo}>
-              <Text style={styles.teacherName}>{t.name}</Text>
-              <Text style={styles.teacherMeta}>{t.subject} | {t.posts} posts</Text>
-            </View>
-            <Pressable style={styles.followingBtn}>
-              <Text style={styles.followingText}>Following</Text>
-            </Pressable>
+            ))}
           </View>
-        ))}
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('common.settings')}</Text>
-        <Pressable
-          style={styles.settingsRow}
-          onPress={() => navigation.navigate('settings')}
-        >
-          <Feather name="globe" size={18} color={Colors.textSecondary} />
-          <Text style={styles.settingsLabel}>{t('settings.language')}</Text>
-          <Text style={styles.settingsValue}>{t('settings.english')}</Text>
-          <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
-        </Pressable>
+        <Text style={styles.sectionTitle}>Followed Teachers</Text>
+        {subjectProgress.length === 0 ? (
+          <Text style={{ color: Colors.textSecondary, marginVertical: 12 }}>No followed teachers yet</Text>
+        ) : (
+          <View>
+            {subjectProgress.map((subject) => (
+              <View key={subject.name} style={styles.teacherRow}>
+                <View style={styles.teacherAvatar}>
+                  <Feather name="user" size={18} color={Colors.primary} />
+                </View>
+                <View style={styles.teacherInfo}>
+                  <Text style={styles.teacherName}>{subject.name}</Text>
+                  <Text style={styles.teacherMeta}>{subject.name} | 5 posts</Text>
+                </View>
+                <Pressable style={styles.followingBtn}>
+                  <Text style={styles.followingText}>Following</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Settings</Text>
         {[
+          { icon: 'globe' as const, label: 'Language', value: 'English' },
           { icon: 'bell' as const, label: 'Notifications', value: 'On' },
           { icon: 'shield' as const, label: 'Account', value: '' },
           { icon: 'help-circle' as const, label: 'Help & Support', value: '' },

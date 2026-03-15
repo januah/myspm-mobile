@@ -8,37 +8,12 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '@/constants/colors';
-
-const SAMPLE_QUESTIONS = [
-  {
-    id: 1,
-    text: 'A bag contains 3 red balls and 5 blue balls. If a ball is drawn at random, what is the probability of getting a red ball?',
-    options: ['3/8', '5/8', '3/5', '1/3'],
-    correct: 0,
-    explanation: 'Total balls = 3 + 5 = 8. Red balls = 3. Probability = 3/8.',
-    tip: 'Remember: P(event) = Number of favourable outcomes / Total number of outcomes',
-  },
-  {
-    id: 2,
-    text: 'Two dice are thrown simultaneously. What is the probability of getting a sum of 7?',
-    options: ['1/6', '5/36', '1/12', '7/36'],
-    correct: 0,
-    explanation: 'Favourable outcomes: (1,6),(2,5),(3,4),(4,3),(5,2),(6,1) = 6. Total = 36. P = 6/36 = 1/6.',
-    tip: 'List all possible combinations systematically to avoid missing any.',
-  },
-  {
-    id: 3,
-    text: 'A card is drawn from a standard deck of 52 cards. What is the probability of getting a face card?',
-    options: ['3/13', '1/4', '12/52', 'Both A and C'],
-    correct: 3,
-    explanation: 'Face cards (J, Q, K) = 4 x 3 = 12. P = 12/52 = 3/13. Both A and C are correct.',
-    tip: 'Face cards are Jacks, Queens, and Kings. There are 4 suits with 3 face cards each.',
-  },
-];
+import Colors from '@/constants/colors';
+import { usePracticeQuestions } from '@/lib/hooks/usePractice';
 
 export default function PracticeSessionScreen() {
   const { subject, topic, difficulty, count } = useLocalSearchParams<{
@@ -50,14 +25,39 @@ export default function PracticeSessionScreen() {
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
 
-  const requestedCount = Math.min(parseInt(count || '3', 10), SAMPLE_QUESTIONS.length);
-  const questions = SAMPLE_QUESTIONS.slice(0, requestedCount);
+  const { data: questionData, isLoading } = usePracticeQuestions({
+    subject: subject || '',
+    topic: topic || '',
+    difficulty: (difficulty as any) || 'Medium',
+    count: parseInt(count || '10', 10),
+  });
+
+  const questions = questionData?.questions || [];
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingTop: insets.top + webTopPadding }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingTop: insets.top + webTopPadding }]}>
+        <Text style={styles.questionText}>No questions available</Text>
+        <Pressable style={styles.doneBtn} onPress={() => router.back()} hitSlop={10}>
+          <Text style={styles.doneText}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const question = questions[currentIndex];
   const total = questions.length;

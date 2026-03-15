@@ -8,49 +8,28 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/colors';
-
-const SUBJECTS = [
-  { id: 'math', label: 'Mathematics', icon: 'calculator' as const, color: Colors.subjectMath },
-  { id: 'addmath', label: 'Add Maths', icon: 'function-variant' as const, color: Colors.subjectAddMath },
-  { id: 'science', label: 'Science', icon: 'flask' as const, color: Colors.subjectScience },
-  { id: 'bio', label: 'Biology', icon: 'leaf' as const, color: Colors.subjectBio },
-  { id: 'chem', label: 'Chemistry', icon: 'atom' as const, color: Colors.subjectChem },
-  { id: 'physics', label: 'Physics', icon: 'lightning-bolt' as const, color: Colors.subjectPhysics },
-  { id: 'sejarah', label: 'Sejarah', icon: 'book-open-variant' as const, color: Colors.subjectSejarah },
-  { id: 'bm', label: 'Bahasa Melayu', icon: 'translate' as const, color: Colors.subjectBM },
-  { id: 'english', label: 'English', icon: 'alphabetical' as const, color: Colors.subjectEnglish },
-];
-
-const TOPICS: Record<string, string[]> = {
-  math: ['Probability', 'Algebra', 'Statistics', 'Geometry', 'Trigonometry'],
-  addmath: ['Integration', 'Differentiation', 'Progressions', 'Functions'],
-  science: ['Forces & Motion', 'Light & Optics', 'Electricity', 'Heat'],
-  bio: ['Cell Biology', 'Ecology', 'Genetics', 'Nutrition'],
-  chem: ['Chemical Bonding', 'Acids & Bases', 'Electrochemistry', 'Carbon Compounds'],
-  physics: ["Newton's Laws", 'Waves', 'Nuclear Physics', 'Electromagnetism'],
-  sejarah: ['Kemerdekaan', 'Tamadun Awal', 'Nasionalisme', 'Perlembagaan'],
-  bm: ['Tatabahasa', 'Karangan', 'Komsas', 'Rumusan'],
-  english: ['Grammar', 'Comprehension', 'Essay Writing', 'Literature'],
-};
+import Colors from '@/constants/colors';
+import { useSubjects, useTopics } from '@/lib/hooks/usePractice';
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
 const QUESTION_COUNTS = [5, 10, 15, 20] as const;
 
 export default function PracticeScreen() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<typeof DIFFICULTIES[number]>('Medium');
   const [selectedCount, setSelectedCount] = useState<typeof QUESTION_COUNTS[number]>(10);
 
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
+  const { data: topics = [], isLoading: topicsLoading } = useTopics(selectedSubject);
+
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
-  const currentTopics = selectedSubject ? TOPICS[selectedSubject] || [] : [];
+  const currentTopics = topics;
   const canStart = selectedSubject && selectedTopic;
 
   return (
@@ -60,14 +39,17 @@ export default function PracticeScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>{t('navigation.practice')}</Text>
-        <Text style={styles.subtitle}>{t('practice.subtitle')}</Text>
+        <Text style={styles.title}>Practice</Text>
+        <Text style={styles.subtitle}>Choose your subject and start learning</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('practice.subject')}</Text>
-        <View style={styles.subjectGrid}>
-          {SUBJECTS.map((subject) => {
+        <Text style={styles.sectionTitle}>Subject</Text>
+        {subjectsLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
+        ) : (
+          <View style={styles.subjectGrid}>
+            {subjects.map((subject) => {
             const isSelected = selectedSubject === subject.id;
             return (
               <Pressable
@@ -90,12 +72,13 @@ export default function PracticeScreen() {
               </Pressable>
             );
           })}
-        </View>
+          </View>
+        )}
       </View>
 
       {selectedSubject && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('practice.topic')}</Text>
+          <Text style={styles.sectionTitle}>Topic</Text>
           <View style={styles.topicList}>
             {currentTopics.map((topic) => {
               const isSelected = selectedTopic === topic;
@@ -116,7 +99,7 @@ export default function PracticeScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('practice.difficulty')}</Text>
+        <Text style={styles.sectionTitle}>Difficulty</Text>
         <View style={styles.optionRow}>
           {DIFFICULTIES.map((d) => {
             const isSelected = selectedDifficulty === d;
@@ -137,7 +120,7 @@ export default function PracticeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('practice.numQuestions')}</Text>
+        <Text style={styles.sectionTitle}>Number of Questions</Text>
         <View style={styles.optionRow}>
           {QUESTION_COUNTS.map((c) => {
             const isSelected = selectedCount === c;
@@ -170,7 +153,7 @@ export default function PracticeScreen() {
         }}
       >
         <Ionicons name="play" size={20} color="#fff" />
-        <Text style={styles.startText}>{t('practice.startPractice')}</Text>
+        <Text style={styles.startText}>Start Practice</Text>
       </Pressable>
     </ScrollView>
   );

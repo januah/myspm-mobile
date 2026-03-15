@@ -7,32 +7,16 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
+import { useSchoolLeaderboard, useNationalLeaderboard, useSchoolRanking } from '@/lib/hooks/useLeaderboard';
 
-const TABS = ['leaderboard.school', 'leaderboard.national', 'leaderboard.subject'] as const;
+const TABS = ['School', 'National', 'Subject'] as const;
 
-const SCHOOL_LEADERS = [
-  { rank: 1, name: 'Sarah binti Ahmad', xp: 8420, streak: 14, avatar: 'S' },
-  { rank: 2, name: 'Aiman bin Razak', xp: 7910, streak: 10, avatar: 'A' },
-  { rank: 3, name: 'Daniel Lee', xp: 7300, streak: 8, avatar: 'D' },
-  { rank: 4, name: 'Nurul Izzah', xp: 6850, streak: 12, avatar: 'N' },
-  { rank: 5, name: 'Muhammad Haziq', xp: 6400, streak: 5, avatar: 'M' },
-  { rank: 6, name: 'Tan Wei Ming', xp: 5920, streak: 7, avatar: 'T' },
-  { rank: 7, name: 'Priya a/p Kumar', xp: 5610, streak: 4, avatar: 'P' },
-  { rank: 8, name: 'Hafiz bin Ali', xp: 5200, streak: 6, avatar: 'H' },
-];
-
-const SCHOOL_RANKING = [
-  { rank: 1, name: 'SMK Taman Melawati', students: 142, avgXp: 5420 },
-  { rank: 2, name: 'SMK Sri Aman', students: 98, avgXp: 4890 },
-  { rank: 3, name: 'MRSM Langkawi', students: 76, avgXp: 4620 },
-];
-
-function TopThree({ leaders }: { leaders: typeof SCHOOL_LEADERS }) {
+function TopThree({ leaders }: { leaders: any[] }) {
   const top3 = leaders.slice(0, 3);
   const order = [top3[1], top3[0], top3[2]];
   const heights = [100, 130, 80];
@@ -61,10 +45,16 @@ function TopThree({ leaders }: { leaders: typeof SCHOOL_LEADERS }) {
 }
 
 export default function LeaderboardScreen() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('leaderboard.school');
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('School');
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
+
+  const { data: schoolLeaders = [], isLoading: schoolLoading } = useSchoolLeaderboard();
+  const { data: nationalLeaders = [], isLoading: nationalLoading } = useNationalLeaderboard();
+  const { data: schoolRankings = [], isLoading: rankingLoading } = useSchoolRanking();
+
+  const currentLeaders = activeTab === 'School' ? schoolLeaders : nationalLeaders;
+  const isLoading = activeTab === 'School' ? schoolLoading : nationalLoading;
 
   return (
     <ScrollView
@@ -73,7 +63,7 @@ export default function LeaderboardScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>{t('navigation.leaderboard')}</Text>
+        <Text style={styles.title}>Leaderboard</Text>
       </View>
 
       <View style={styles.tabBar}>
@@ -83,16 +73,20 @@ export default function LeaderboardScreen() {
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{t(tab)}</Text>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
           </Pressable>
         ))}
       </View>
 
-      <TopThree leaders={SCHOOL_LEADERS} />
+      {isLoading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          <TopThree leaders={currentLeaders} />
 
-      <View style={styles.listSection}>
-        <Text style={styles.listTitle}>{t('leaderboard.fullRankings')}</Text>
-        {SCHOOL_LEADERS.map((person, idx) => (
+          <View style={styles.listSection}>
+            <Text style={styles.listTitle}>Full Rankings</Text>
+            {currentLeaders.map((person, idx) => (
           <View key={person.rank} style={styles.rankRow}>
             <Text style={styles.rankNum}>{person.rank}</Text>
             <View style={[styles.rankAvatar, { backgroundColor: idx < 3 ? [Colors.gold, Colors.silver, Colors.bronze][idx] + '20' : Colors.surfaceAlt }]}>
@@ -104,7 +98,7 @@ export default function LeaderboardScreen() {
               <Text style={styles.rankName}>{person.name}</Text>
               <View style={styles.rankMeta}>
                 <MaterialCommunityIcons name="fire" size={12} color={Colors.streak} />
-                <Text style={styles.rankStreak}>{t('leaderboard.dayStreak', { count: person.streak })}</Text>
+                <Text style={styles.rankStreak}>{person.streak} day streak</Text>
               </View>
             </View>
             <Text style={styles.rankXp}>{person.xp.toLocaleString()}</Text>
@@ -113,18 +107,28 @@ export default function LeaderboardScreen() {
         ))}
       </View>
 
-      <View style={styles.schoolSection}>
-        <Text style={styles.listTitle}>{t('leaderboard.schoolVsSchool')}</Text>
-        {SCHOOL_RANKING.map((school) => (
+      {activeTab === 'School' && (
+        <View style={styles.schoolSection}>
+          <Text style={styles.listTitle}>School vs School</Text>
+          {rankingLoading ? (
+            <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
+          ) : (
+            <>
+              {schoolRankings.map((school) => (
           <View key={school.rank} style={styles.schoolRow}>
             <Text style={styles.schoolRank}>#{school.rank}</Text>
             <View style={styles.schoolInfo}>
               <Text style={styles.schoolName}>{school.name}</Text>
-              <Text style={styles.schoolMeta}>{t('leaderboard.schoolMeta', { students: school.students, avgXp: school.avgXp.toLocaleString() })}</Text>
+              <Text style={styles.schoolMeta}>{school.students} students | Avg {school.avgXp.toLocaleString()} XP</Text>
             </View>
           </View>
         ))}
-      </View>
+            </>
+          )}
+        </View>
+      )}
+        </>
+      )}
     </ScrollView>
   );
 }
