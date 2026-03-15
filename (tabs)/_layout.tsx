@@ -8,7 +8,7 @@ import React from 'react';
 import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { colors } from '@/constants/colors';
 
 function NativeTabLayout() {
   return (

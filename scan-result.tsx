@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { colors } from '@/constants/colors';
 
 const SCAN_RESPONSE = {
   question: 'Solve the quadratic equation: x\u00B2 + 5x + 6 = 0',

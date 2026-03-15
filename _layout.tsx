@@ -15,16 +15,58 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      AsyncStorage.getItem("onboarding_complete")
+        .then((value) => {
+          setOnboardingComplete(value === "true");
+        })
+        .finally(() => setChecked(true));
+    } else {
+      setChecked(true);
+    }
+  }, [isAuthenticated, isLoading]);
+
+  if (isLoading || !checked) {
+    return null; // Show splash screen while loading
+  }
+
+  // User not authenticated - show login flow
+  if (!isAuthenticated) {
+    return (
+      <Stack screenOptions={{ headerBackTitle: "Back" }}>
+        <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="forgot-password" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false, gestureEnabled: false }} />
+      </Stack>
+    );
+  }
+
+  // User authenticated but onboarding not complete
+  if (!onboardingComplete) {
+    return (
+      <Stack screenOptions={{ headerBackTitle: "Back" }}>
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+      </Stack>
+    );
+  }
+
+  // User authenticated and onboarding complete - show main app
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="practice-session" options={{ headerShown: false }} />
       <Stack.Screen name="scan-result" options={{ headerShown: false }} />
       <Stack.Screen name="exam-mode" options={{ headerShown: false }} />
@@ -32,22 +74,6 @@ function RootLayoutNav() {
   );
 }
 
-function useOnboardingCheck() {
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem("onboarding_complete")
-      .then((value) => {
-        if (value !== "true") {
-          router.replace("/onboarding");
-        }
-      })
-      .catch(() => {})
-      .finally(() => setChecked(true));
-  }, []);
-
-  return checked;
-}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -57,26 +83,26 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const onboardingChecked = useOnboardingCheck();
-
   useEffect(() => {
-    if ((fontsLoaded || fontError) && onboardingChecked) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, onboardingChecked]);
+  }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </AuthProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );
