@@ -9,10 +9,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
 
-const TABS = ['School', 'National', 'Subject'] as const;
+const TABS = ['leaderboard.school', 'leaderboard.national', 'leaderboard.subject'] as const;
 
 const SCHOOL_LEADERS = [
   { rank: 1, name: 'Sarah binti Ahmad', xp: 8420, streak: 14, avatar: 'S' },
@@ -60,8 +61,9 @@ function TopThree({ leaders }: { leaders: typeof SCHOOL_LEADERS }) {
 }
 
 export default function LeaderboardScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('School');
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('leaderboard.school');
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
 
   return (
@@ -71,7 +73,7 @@ export default function LeaderboardScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>Leaderboard</Text>
+        <Text style={styles.title}>{t('navigation.leaderboard')}</Text>
       </View>
 
       <View style={styles.tabBar}>
@@ -81,7 +83,7 @@ export default function LeaderboardScreen() {
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{t(tab)}</Text>
           </Pressable>
         ))}
       </View>
@@ -89,7 +91,7 @@ export default function LeaderboardScreen() {
       <TopThree leaders={SCHOOL_LEADERS} />
 
       <View style={styles.listSection}>
-        <Text style={styles.listTitle}>Full Rankings</Text>
+        <Text style={styles.listTitle}>{t('leaderboard.fullRankings')}</Text>
         {SCHOOL_LEADERS.map((person, idx) => (
           <View key={person.rank} style={styles.rankRow}>
             <Text style={styles.rankNum}>{person.rank}</Text>
@@ -102,7 +104,7 @@ export default function LeaderboardScreen() {
               <Text style={styles.rankName}>{person.name}</Text>
               <View style={styles.rankMeta}>
                 <MaterialCommunityIcons name="fire" size={12} color={Colors.streak} />
-                <Text style={styles.rankStreak}>{person.streak} day streak</Text>
+                <Text style={styles.rankStreak}>{t('leaderboard.dayStreak', { count: person.streak })}</Text>
               </View>
             </View>
             <Text style={styles.rankXp}>{person.xp.toLocaleString()}</Text>
@@ -112,13 +114,13 @@ export default function LeaderboardScreen() {
       </View>
 
       <View style={styles.schoolSection}>
-        <Text style={styles.listTitle}>School vs School</Text>
+        <Text style={styles.listTitle}>{t('leaderboard.schoolVsSchool')}</Text>
         {SCHOOL_RANKING.map((school) => (
           <View key={school.rank} style={styles.schoolRow}>
             <Text style={styles.schoolRank}>#{school.rank}</Text>
             <View style={styles.schoolInfo}>
               <Text style={styles.schoolName}>{school.name}</Text>
-              <Text style={styles.schoolMeta}>{school.students} students | Avg {school.avgXp.toLocaleString()} XP</Text>
+              <Text style={styles.schoolMeta}>{t('leaderboard.schoolMeta', { students: school.students, avgXp: school.avgXp.toLocaleString() })}</Text>
             </View>
           </View>
         ))}

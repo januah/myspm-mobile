@@ -10,11 +10,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
+import { Provider, useDispatch, useSelector } from "react-redux";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initializeI18n } from "@/i18n";
+import CalendarService from "@/services/CalendarService";
+import NotificationService from "@/services/NotificationService";
+import TeacherService from "@/services/teacherService";
+import store, { RootState, AppDispatch } from "@/store";
+import { loadLanguagePreference, selectCurrentLanguage } from "@/store/languageSlice";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,7 +56,8 @@ function useOnboardingCheck() {
   return checked;
 }
 
-export default function RootLayout() {
+function RootLayoutContent() {
+  const dispatch = useDispatch();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -60,10 +68,28 @@ export default function RootLayout() {
   const onboardingChecked = useOnboardingCheck();
 
   useEffect(() => {
+    // Initialize i18n
+    initializeI18n().then(() => {
+      // Load language preference from storage
+      dispatch(loadLanguagePreference() as any);
+    });
+  }, [dispatch]);
+
+  useEffect(() => {
     if ((fontsLoaded || fontError) && onboardingChecked) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError, onboardingChecked]);
+
+  // Update all services with current language
+  const currentLanguage = useSelector(selectCurrentLanguage);
+  useEffect(() => {
+    if (currentLanguage) {
+      CalendarService.setLanguage(currentLanguage);
+      NotificationService.setLanguage(currentLanguage);
+      TeacherService.setLanguage(currentLanguage);
+    }
+  }, [currentLanguage]);
 
   if (!fontsLoaded && !fontError) return null;
 
@@ -79,5 +105,13 @@ export default function RootLayout() {
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <RootLayoutContent />
+    </Provider>
   );
 }

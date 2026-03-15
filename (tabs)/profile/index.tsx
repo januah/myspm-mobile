@@ -1,4 +1,5 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from 'expo-router';
 import React from 'react';
 import {
   Platform,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
 
@@ -36,6 +38,8 @@ const TEACHERS = [
 ];
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
 
@@ -46,8 +50,11 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>Profile</Text>
-        <Pressable style={styles.settingsBtn}>
+        <Text style={styles.title}>{t('profile.title')}</Text>
+        <Pressable
+          style={styles.settingsBtn}
+          onPress={() => navigation.navigate('settings')}
+        >
           <Feather name="settings" size={22} color={Colors.textSecondary} />
         </Pressable>
       </View>
@@ -85,7 +92,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Achievements</Text>
+        <Text style={styles.sectionTitle}>{t('gamification.achievements')}</Text>
         <View style={styles.achievementGrid}>
           {ACHIEVEMENTS.map((a) => (
             <View key={a.id} style={[styles.achievementCard, !a.earned && styles.achievementLocked]}>
@@ -108,7 +115,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Subject Performance</Text>
+        <Text style={styles.sectionTitle}>{t('common.performance') || 'Subject Performance'}</Text>
         <View style={styles.progressCard}>
           {SUBJECT_PROGRESS.map((s) => (
             <View key={s.name} style={styles.progressRow}>
@@ -123,7 +130,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Followed Teachers</Text>
+        <Text style={styles.sectionTitle}>{t('profile.teacher') || 'Followed Teachers'}</Text>
         {TEACHERS.map((t) => (
           <View key={t.name} style={styles.teacherRow}>
             <View style={styles.teacherAvatar}>
@@ -141,9 +148,17 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Settings</Text>
+        <Text style={styles.sectionTitle}>{t('common.settings')}</Text>
+        <Pressable
+          style={styles.settingsRow}
+          onPress={() => navigation.navigate('settings')}
+        >
+          <Feather name="globe" size={18} color={Colors.textSecondary} />
+          <Text style={styles.settingsLabel}>{t('settings.language')}</Text>
+          <Text style={styles.settingsValue}>{t('settings.english')}</Text>
+          <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
+        </Pressable>
         {[
-          { icon: 'globe' as const, label: 'Language', value: 'English' },
           { icon: 'bell' as const, label: 'Notifications', value: 'On' },
           { icon: 'shield' as const, label: 'Account', value: '' },
           { icon: 'help-circle' as const, label: 'Help & Support', value: '' },

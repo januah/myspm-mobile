@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
 
@@ -38,6 +39,7 @@ const TEACHER_POSTS = [
 ];
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
 
@@ -49,15 +51,15 @@ export default function HomeScreen() {
     >
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View>
-          <Text style={styles.greeting}>Good evening, Aiman</Text>
+          <Text style={styles.greeting}>{t('home.greeting')}</Text>
           <View style={styles.streakRow}>
             <View style={styles.streakBadge}>
               <MaterialCommunityIcons name="fire" size={14} color={Colors.streak} />
-              <Text style={styles.streakText}>10 day streak</Text>
+              <Text style={styles.streakText}>{t('home.streakBadge')}</Text>
             </View>
             <View style={styles.xpBadge}>
               <MaterialCommunityIcons name="star-four-points" size={14} color={Colors.xp} />
-              <Text style={styles.xpText}>7,910 XP</Text>
+              <Text style={styles.xpText}>{t('home.xpBadge')}</Text>
             </View>
           </View>
         </View>
@@ -71,27 +73,27 @@ export default function HomeScreen() {
           <View style={[styles.quickIcon, { backgroundColor: Colors.primary + '12' }]}>
             <Ionicons name="play" size={22} color={Colors.primary} />
           </View>
-          <Text style={styles.quickLabel}>Practice</Text>
+          <Text style={styles.quickLabel}>{t('home.practice')}</Text>
         </Pressable>
         <Pressable style={styles.quickBtn} onPress={() => router.push('/exam-mode')}>
           <View style={[styles.quickIcon, { backgroundColor: Colors.accent + '12' }]}>
             <MaterialCommunityIcons name="file-document-edit-outline" size={22} color={Colors.accent} />
           </View>
-          <Text style={styles.quickLabel}>Exam</Text>
+          <Text style={styles.quickLabel}>{t('home.exam')}</Text>
         </Pressable>
         <Pressable style={styles.quickBtn} onPress={() => router.push('/(tabs)/camera')}>
           <View style={[styles.quickIcon, { backgroundColor: Colors.xp + '12' }]}>
             <MaterialCommunityIcons name="camera-outline" size={22} color={Colors.xp} />
           </View>
-          <Text style={styles.quickLabel}>Scan</Text>
+          <Text style={styles.quickLabel}>{t('home.scan')}</Text>
         </Pressable>
       </View>
 
       <View style={styles.studyPlanCard}>
         <View style={styles.studyPlanHeader}>
           <View>
-            <Text style={styles.cardTitle}>Today's Study Plan</Text>
-            <Text style={styles.cardSubtitle}>AI-personalized for you</Text>
+            <Text style={styles.cardTitle}>{t('home.studyPlan')}</Text>
+            <Text style={styles.cardSubtitle}>{t('home.aiPersonalized')}</Text>
           </View>
           <MaterialCommunityIcons name="robot-outline" size={20} color={Colors.primary} />
         </View>
@@ -105,13 +107,13 @@ export default function HomeScreen() {
           </View>
         ))}
         <Pressable style={styles.planBtn} onPress={() => router.push('/(tabs)/practice')}>
-          <Text style={styles.planBtnText}>Start Practice</Text>
+          <Text style={styles.planBtnText}>{t('home.startPractice')}</Text>
           <Feather name="arrow-right" size={16} color={Colors.textInverse} />
         </Pressable>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Progress Snapshot</Text>
+        <Text style={styles.sectionTitle}>{t('home.progressSnapshot')}</Text>
         <View style={styles.progressCard}>
           {SUBJECT_PROGRESS.map((s) => (
             <View key={s.name} style={styles.progressRow}>
@@ -127,9 +129,9 @@ export default function HomeScreen() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Leaderboard</Text>
+          <Text style={styles.sectionTitle}>{t('navigation.leaderboard')}</Text>
           <Pressable onPress={() => router.push('/(tabs)/leaderboard')}>
-            <Text style={styles.viewAll}>View All</Text>
+            <Text style={styles.viewAll}>{t('home.viewAll')}</Text>
           </Pressable>
         </View>
         <View style={styles.leaderboardCard}>
@@ -150,14 +152,14 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Teacher Feed</Text>
+        <Text style={styles.sectionTitle}>{t('home.teacherFeed')}</Text>
         {TEACHER_POSTS.map((post, idx) => (
           <Pressable key={idx} style={styles.feedCard}>
             <View style={styles.feedAvatar}>
               <Feather name="user" size={16} color={Colors.primary} />
             </View>
             <View style={styles.feedInfo}>
-              <Text style={styles.feedTeacher}>{post.teacher} <Text style={styles.feedAction}>posted</Text></Text>
+              <Text style={styles.feedTeacher}>{post.teacher} <Text style={styles.feedAction}>{t('home.posted')}</Text></Text>
               <Text style={styles.feedTitle}>{post.title}</Text>
             </View>
             <Text style={styles.feedTime}>{post.time}</Text>
@@ -166,15 +168,15 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Assignments</Text>
+        <Text style={styles.sectionTitle}>{t('common.assignments')}</Text>
         <View style={styles.assignmentCard}>
           <View style={[styles.assignmentDot, { backgroundColor: Colors.warning }]} />
           <View style={styles.assignmentInfo}>
-            <Text style={styles.assignmentTitle}>Bahasa Melayu Essay</Text>
-            <Text style={styles.assignmentDue}>Due Tomorrow</Text>
+            <Text style={styles.assignmentTitle}>{t('home.assignmentTitle')}</Text>
+            <Text style={styles.assignmentDue}>{t('home.dueTomorrow')}</Text>
           </View>
           <Pressable style={styles.submitBtn}>
-            <Text style={styles.submitText}>Submit</Text>
+            <Text style={styles.submitText}>{t('common.submit')}</Text>
           </Pressable>
         </View>
       </View>

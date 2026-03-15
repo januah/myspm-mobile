@@ -7,37 +7,41 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
 
 function NativeTabLayout() {
+  const { t } = useTranslation();
+
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>Home</Label>
+        <Label>{t('navigation.home')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="practice">
         <Icon sf={{ default: 'book', selected: 'book.fill' }} />
-        <Label>Practice</Label>
+        <Label>{t('navigation.practice')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="camera">
         <Icon sf={{ default: 'camera', selected: 'camera.fill' }} />
-        <Label>Camera</Label>
+        <Label>{t('navigation.camera')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="leaderboard">
         <Icon sf={{ default: 'trophy', selected: 'trophy.fill' }} />
-        <Label>Rank</Label>
+        <Label>{t('navigation.leaderboard')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: 'person', selected: 'person.fill' }} />
-        <Label>Profile</Label>
+        <Label>{t('navigation.profile')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
 
 function ClassicTabLayout() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
@@ -71,7 +75,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('navigation.home'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
@@ -83,7 +87,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="practice"
         options={{
-          title: 'Practice',
+          title: t('navigation.practice'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="book" tintColor={color} size={24} />
@@ -95,7 +99,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="camera"
         options={{
-          title: 'Camera',
+          title: t('navigation.camera'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="camera" tintColor={color} size={24} />
@@ -107,7 +111,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: 'Rank',
+          title: t('navigation.leaderboard'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="trophy" tintColor={color} size={24} />
@@ -119,7 +123,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('navigation.profile'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="person" tintColor={color} size={24} />

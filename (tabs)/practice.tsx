@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/colors';
 
@@ -41,6 +42,7 @@ const DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
 const QUESTION_COUNTS = [5, 10, 15, 20] as const;
 
 export default function PracticeScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -58,12 +60,12 @@ export default function PracticeScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>Practice</Text>
-        <Text style={styles.subtitle}>Choose your subject and start learning</Text>
+        <Text style={styles.title}>{t('navigation.practice')}</Text>
+        <Text style={styles.subtitle}>{t('practice.subtitle')}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Subject</Text>
+        <Text style={styles.sectionTitle}>{t('practice.subject')}</Text>
         <View style={styles.subjectGrid}>
           {SUBJECTS.map((subject) => {
             const isSelected = selectedSubject === subject.id;
@@ -93,7 +95,7 @@ export default function PracticeScreen() {
 
       {selectedSubject && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Topic</Text>
+          <Text style={styles.sectionTitle}>{t('practice.topic')}</Text>
           <View style={styles.topicList}>
             {currentTopics.map((topic) => {
               const isSelected = selectedTopic === topic;
@@ -114,7 +116,7 @@ export default function PracticeScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Difficulty</Text>
+        <Text style={styles.sectionTitle}>{t('practice.difficulty')}</Text>
         <View style={styles.optionRow}>
           {DIFFICULTIES.map((d) => {
             const isSelected = selectedDifficulty === d;
@@ -135,7 +137,7 @@ export default function PracticeScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Number of Questions</Text>
+        <Text style={styles.sectionTitle}>{t('practice.numQuestions')}</Text>
         <View style={styles.optionRow}>
           {QUESTION_COUNTS.map((c) => {
             const isSelected = selectedCount === c;
@@ -168,7 +170,7 @@ export default function PracticeScreen() {
         }}
       >
         <Ionicons name="play" size={20} color="#fff" />
-        <Text style={styles.startText}>Start Practice</Text>
+        <Text style={styles.startText}>{t('practice.startPractice')}</Text>
       </Pressable>
     </ScrollView>
   );
