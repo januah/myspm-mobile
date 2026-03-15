@@ -1,6 +1,6 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -14,46 +14,30 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-
-const SCAN_RESPONSE = {
-  question: 'Solve the quadratic equation: x\u00B2 + 5x + 6 = 0',
-  solution: [
-    'Step 1: Identify coefficients a=1, b=5, c=6',
-    'Step 2: Find two numbers that multiply to 6 and add to 5',
-    'Step 3: The numbers are 2 and 3',
-    'Step 4: Factor: (x + 2)(x + 3) = 0',
-    'Step 5: x = -2 or x = -3',
-  ],
-  answer: 'x = -2 or x = -3',
-  similarQuestions: [
-    'Solve x\u00B2 - 7x + 12 = 0',
-    'Solve 2x\u00B2 + 3x - 2 = 0',
-  ],
-};
-
-const UPLOAD_RESPONSE = {
-  score: 7,
-  total: 10,
-  feedback: 'Good attempt! Your working is mostly correct but you missed key points in the conclusion paragraph.',
-  missingPoints: [
-    'Did not mention the impact on economic development',
-    'Missing reference to primary sources',
-    'Conclusion needs stronger summarization',
-  ],
-};
+import { useScanQuestion, useGradeAnswer } from '@/lib/hooks/useScan';
 
 export default function ScanResultScreen() {
-  const { imageUri, mode } = useLocalSearchParams<{ imageUri: string; mode: string }>();
+  const { imageUri, mode, questionId } = useLocalSearchParams<{ imageUri: string; mode: string; questionId?: string }>();
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const isScan = mode === 'scan';
+  const scanMutation = useScanQuestion();
+  const gradeMutation = useGradeAnswer();
+
+  useEffect(() => {
+    if (imageUri) {
+      if (isScan) {
+        scanMutation.mutate({ imageUri });
+      } else if (questionId) {
+        gradeMutation.mutate({ imageUri, questionId });
+      }
+    }
+  }, [imageUri, mode, questionId]);
+
+  const loading = isScan ? scanMutation.isPending : gradeMutation.isPending;
+  const scanData = isScan ? scanMutation.data : null;
+  const gradeData = !isScan ? gradeMutation.data : null;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTopPadding }]}>
@@ -81,14 +65,14 @@ export default function ScanResultScreen() {
             </View>
           )}
 
-          {isScan ? (
+          {isScan && scanData ? (
             <>
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
                   <MaterialCommunityIcons name="text-box-search-outline" size={18} color={Colors.primary} />
                   <Text style={styles.cardTitle}>Detected Question</Text>
                 </View>
-                <Text style={styles.questionText}>{SCAN_RESPONSE.question}</Text>
+                <Text style={styles.questionText}>{scanData.question}</Text>
               </View>
 
               <View style={styles.card}>
@@ -96,7 +80,7 @@ export default function ScanResultScreen() {
                   <MaterialCommunityIcons name="lightbulb-on-outline" size={18} color={Colors.accent} />
                   <Text style={styles.cardTitle}>Step-by-Step Solution</Text>
                 </View>
-                {SCAN_RESPONSE.solution.map((step, idx) => (
+                {scanData.solution?.map((step, idx) => (
                   <View key={idx} style={styles.stepRow}>
                     <View style={styles.stepDot}>
                       <Text style={styles.stepNum}>{idx + 1}</Text>
@@ -104,51 +88,57 @@ export default function ScanResultScreen() {
                     <Text style={styles.stepText}>{step}</Text>
                   </View>
                 ))}
-                <View style={styles.answerBox}>
-                  <Text style={styles.answerLabel}>Answer</Text>
-                  <Text style={styles.answerText}>{SCAN_RESPONSE.answer}</Text>
-                </View>
+                {scanData.answer && (
+                  <View style={styles.answerBox}>
+                    <Text style={styles.answerLabel}>Answer</Text>
+                    <Text style={styles.answerText}>{scanData.answer}</Text>
+                  </View>
+                )}
               </View>
 
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Feather name="link" size={16} color={Colors.xp} />
-                  <Text style={styles.cardTitle}>Similar Questions</Text>
+              {scanData.similarQuestions && scanData.similarQuestions.length > 0 && (
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="link" size={16} color={Colors.xp} />
+                    <Text style={styles.cardTitle}>Similar Questions</Text>
+                  </View>
+                  {scanData.similarQuestions.map((q, idx) => (
+                    <Pressable key={idx} style={styles.similarItem}>
+                      <Text style={styles.similarText}>{q}</Text>
+                      <Feather name="arrow-right" size={14} color={Colors.primary} />
+                    </Pressable>
+                  ))}
                 </View>
-                {SCAN_RESPONSE.similarQuestions.map((q, idx) => (
-                  <Pressable key={idx} style={styles.similarItem}>
-                    <Text style={styles.similarText}>{q}</Text>
-                    <Feather name="arrow-right" size={14} color={Colors.primary} />
-                  </Pressable>
-                ))}
-              </View>
+              )}
             </>
-          ) : (
+          ) : !isScan && gradeData ? (
             <>
               <View style={styles.scoreCard}>
                 <View style={[styles.scoreCircle, {
-                  borderColor: UPLOAD_RESPONSE.score / UPLOAD_RESPONSE.total >= 0.6 ? Colors.success : Colors.error,
+                  borderColor: gradeData.score / gradeData.total >= 0.6 ? Colors.success : Colors.error,
                 }]}>
-                  <Text style={styles.scoreValue}>{UPLOAD_RESPONSE.score}</Text>
-                  <Text style={styles.scoreTotal}>/ {UPLOAD_RESPONSE.total}</Text>
+                  <Text style={styles.scoreValue}>{gradeData.score}</Text>
+                  <Text style={styles.scoreTotal}>/ {gradeData.total}</Text>
                 </View>
-                <Text style={styles.scoreFeedback}>{UPLOAD_RESPONSE.feedback}</Text>
+                <Text style={styles.scoreFeedback}>{gradeData.feedback}</Text>
               </View>
 
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Feather name="alert-circle" size={16} color={Colors.warning} />
-                  <Text style={styles.cardTitle}>Missing Key Points</Text>
-                </View>
-                {UPLOAD_RESPONSE.missingPoints.map((point, idx) => (
-                  <View key={idx} style={styles.missingRow}>
-                    <View style={styles.missingDot} />
-                    <Text style={styles.missingText}>{point}</Text>
+              {gradeData.missingPoints && gradeData.missingPoints.length > 0 && (
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="alert-circle" size={16} color={Colors.warning} />
+                    <Text style={styles.cardTitle}>Missing Key Points</Text>
                   </View>
-                ))}
-              </View>
+                  {gradeData.missingPoints.map((point, idx) => (
+                    <View key={idx} style={styles.missingRow}>
+                      <View style={styles.missingDot} />
+                      <Text style={styles.missingText}>{point}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </>
-          )}
+          ) : null}
         </ScrollView>
       )}
     </View>

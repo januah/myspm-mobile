@@ -8,53 +8,59 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-
-const EXAM_QUESTIONS = [
-  {
-    id: 1,
-    text: 'Given that log\u2082 3 = 1.585, find the value of log\u2082 12.',
-    options: ['2.585', '3.585', '4.170', '2.000'],
-    correct: 1,
-  },
-  {
-    id: 2,
-    text: 'Simplify: (2x + 3)(x - 4)',
-    options: ['2x\u00B2 - 5x - 12', '2x\u00B2 + 5x - 12', '2x\u00B2 - 8x + 3', '2x\u00B2 - 11x - 12'],
-    correct: 0,
-  },
-  {
-    id: 3,
-    text: 'The gradient of the tangent to the curve y = x\u00B3 - 3x at point (1, -2) is:',
-    options: ['0', '3', '-3', '6'],
-    correct: 0,
-  },
-  {
-    id: 4,
-    text: 'Find the sum of the first 10 terms of the arithmetic progression 3, 7, 11, ...',
-    options: ['210', '200', '180', '220'],
-    correct: 0,
-  },
-  {
-    id: 5,
-    text: 'If sin \u03B8 = 3/5, and \u03B8 is in the first quadrant, find cos \u03B8.',
-    options: ['4/5', '3/4', '5/3', '5/4'],
-    correct: 0,
-  },
-];
+import { useExamQuestions } from '@/lib/hooks/useExam';
 
 export default function ExamModeScreen() {
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
 
+  const { data: questions = [], isLoading } = useExamQuestions();
+
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<(number | null)[]>(new Array(EXAM_QUESTIONS.length).fill(null));
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [finished, setFinished] = useState(false);
+
+  // Initialize answers array when questions load
+  useEffect(() => {
+    if (questions.length > 0) {
+      setAnswers(new Array(questions.length).fill(null));
+    }
+  }, [questions]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingTop: insets.top + webTopPadding }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + webTopPadding }]}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={Colors.text} />
+          </Pressable>
+          <Text style={styles.topTitle}>Exam Mode</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={styles.examIntro}>
+          <Text style={styles.examTitle}>No exam available</Text>
+          <Pressable style={styles.startExamBtn} onPress={() => router.back()}>
+            <Text style={styles.startExamText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   useEffect(() => {
     if (!started || finished) return;
@@ -91,7 +97,7 @@ export default function ExamModeScreen() {
             <MaterialCommunityIcons name="file-document-edit-outline" size={48} color={Colors.primary} />
           </View>
           <Text style={styles.examTitle}>Mathematics Paper 1</Text>
-          <Text style={styles.examMeta}>{EXAM_QUESTIONS.length} Questions | 1 Hour</Text>
+          <Text style={styles.examMeta}>{questions.length} Questions | 1 Hour</Text>
           <View style={styles.examInfoRow}>
             <View style={styles.examInfoItem}>
               <Feather name="clock" size={16} color={Colors.textSecondary} />
@@ -111,15 +117,15 @@ export default function ExamModeScreen() {
   }
 
   if (finished) {
-    const score = answers.reduce<number>((acc, ans, idx) => acc + (ans === EXAM_QUESTIONS[idx].correct ? 1 : 0), 0);
-    const percent = Math.round((score / EXAM_QUESTIONS.length) * 100);
+    const score = answers.reduce<number>((acc, ans, idx) => acc + (ans === questions[idx].correct ? 1 : 0), 0);
+    const percent = Math.round((score / questions.length) * 100);
     return (
       <View style={[styles.container, { paddingTop: insets.top + webTopPadding + 20 }]}>
         <View style={styles.resultContainer}>
           <View style={[styles.resultCircle, { borderColor: percent >= 60 ? Colors.success : Colors.error }]}>
             <Text style={styles.resultPercent}>{percent}%</Text>
           </View>
-          <Text style={styles.resultScore}>{score}/{EXAM_QUESTIONS.length} correct</Text>
+          <Text style={styles.resultScore}>{score}/{questions.length} correct</Text>
           <Text style={styles.resultTitle}>{percent >= 80 ? 'Excellent!' : percent >= 60 ? 'Well done!' : 'Keep trying!'}</Text>
           <Pressable style={styles.reviewBtn} onPress={() => router.back()}>
             <Text style={styles.reviewText}>Back to Home</Text>
@@ -129,7 +135,7 @@ export default function ExamModeScreen() {
     );
   }
 
-  const question = EXAM_QUESTIONS[currentIndex];
+  const question = questions[currentIndex];
   const answered = answers.filter((a) => a !== null).length;
 
   return (
@@ -142,11 +148,11 @@ export default function ExamModeScreen() {
           <Feather name="clock" size={14} color={timeLeft < 300 ? Colors.error : Colors.textSecondary} />
           <Text style={[styles.timerText, timeLeft < 300 && { color: Colors.error }]}>{formatTime(timeLeft)}</Text>
         </View>
-        <Text style={styles.answeredText}>{answered}/{EXAM_QUESTIONS.length}</Text>
+        <Text style={styles.answeredText}>{answered}/{questions.length}</Text>
       </View>
 
       <View style={styles.navDots}>
-        {EXAM_QUESTIONS.map((_, idx) => (
+        {questions.map((_, idx) => (
           <Pressable
             key={idx}
             style={[
@@ -201,7 +207,195 @@ export default function ExamModeScreen() {
         >
           <Feather name="chevron-left" size={18} color={currentIndex === 0 ? Colors.textTertiary : Colors.text} />
         </Pressable>
-        {currentIndex === EXAM_QUESTIONS.length - 1 ? (
+        {currentIndex === questions.length - 1 ? (
+          <Pressable style={styles.finishBtn} onPress={() => setFinished(true)}>
+            <Text style={styles.finishText}>Finish Exam</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.nextNavBtn} onPress={() => setCurrentIndex((i) => i + 1)}>
+            <Text style={styles.nextNavText}>Next</Text>
+            <Feather name="chevron-right" size={18} color="#fff" />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}\u2082 3 = 1.585, find the value of log\u2082 12.',
+    options: ['2.585', '3.585', '4.170', '2.000'],
+    correct: 1,
+  },
+  {
+    id: 2,
+    text: 'Simplify: (2x + 3)(x - 4)',
+    options: ['2x\u00B2 - 5x - 12', '2x\u00B2 + 5x - 12', '2x\u00B2 - 8x + 3', '2x\u00B2 - 11x - 12'],
+    correct: 0,
+  },
+  {
+    id: 3,
+    text: 'The gradient of the tangent to the curve y = x\u00B3 - 3x at point (1, -2) is:',
+    options: ['0', '3', '-3', '6'],
+    correct: 0,
+  },
+  {
+    id: 4,
+    text: 'Find the sum of the first 10 terms of the arithmetic progression 3, 7, 11, ...',
+    options: ['210', '200', '180', '220'],
+    correct: 0,
+  },
+  {
+    id: 5,
+    text: 'If sin \u03B8 = 3/5, and \u03B8 is in the first quadrant, find cos \u03B8.',
+    options: ['4/5', '3/4', '5/3', '5/4'],
+    correct: 0,
+  },
+];
+
+  useEffect(() => {
+    if (!started || finished) return;
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 0) {
+          setFinished(true);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [started, finished]);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  if (!started) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + webTopPadding }]}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={Colors.text} />
+          </Pressable>
+          <Text style={styles.topTitle}>Exam Mode</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={styles.examIntro}>
+          <View style={styles.examIconBox}>
+            <MaterialCommunityIcons name="file-document-edit-outline" size={48} color={Colors.primary} />
+          </View>
+          <Text style={styles.examTitle}>Mathematics Paper 1</Text>
+          <Text style={styles.examMeta}>{questions.length} Questions | 1 Hour</Text>
+          <View style={styles.examInfoRow}>
+            <View style={styles.examInfoItem}>
+              <Feather name="clock" size={16} color={Colors.textSecondary} />
+              <Text style={styles.examInfoText}>Timer enabled</Text>
+            </View>
+            <View style={styles.examInfoItem}>
+              <Feather name="bar-chart-2" size={16} color={Colors.textSecondary} />
+              <Text style={styles.examInfoText}>Results after</Text>
+            </View>
+          </View>
+          <Pressable style={styles.startExamBtn} onPress={() => setStarted(true)}>
+            <Text style={styles.startExamText}>Start Exam</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (finished) {
+    const score = answers.reduce<number>((acc, ans, idx) => acc + (ans === questions[idx].correct ? 1 : 0), 0);
+    const percent = Math.round((score / questions.length) * 100);
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + webTopPadding + 20 }]}>
+        <View style={styles.resultContainer}>
+          <View style={[styles.resultCircle, { borderColor: percent >= 60 ? Colors.success : Colors.error }]}>
+            <Text style={styles.resultPercent}>{percent}%</Text>
+          </View>
+          <Text style={styles.resultScore}>{score}/{questions.length} correct</Text>
+          <Text style={styles.resultTitle}>{percent >= 80 ? 'Excellent!' : percent >= 60 ? 'Well done!' : 'Keep trying!'}</Text>
+          <Pressable style={styles.reviewBtn} onPress={() => router.back()}>
+            <Text style={styles.reviewText}>Back to Home</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  const question = questions[currentIndex];
+  const answered = answers.filter((a) => a !== null).length;
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + webTopPadding }]}>
+      <View style={styles.examTopBar}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="x" size={22} color={Colors.text} />
+        </Pressable>
+        <View style={styles.timerBox}>
+          <Feather name="clock" size={14} color={timeLeft < 300 ? Colors.error : Colors.textSecondary} />
+          <Text style={[styles.timerText, timeLeft < 300 && { color: Colors.error }]}>{formatTime(timeLeft)}</Text>
+        </View>
+        <Text style={styles.answeredText}>{answered}/{questions.length}</Text>
+      </View>
+
+      <View style={styles.navDots}>
+        {questions.map((_, idx) => (
+          <Pressable
+            key={idx}
+            style={[
+              styles.navDot,
+              idx === currentIndex && styles.navDotActive,
+              answers[idx] !== null && styles.navDotAnswered,
+            ]}
+            onPress={() => setCurrentIndex(idx)}
+          >
+            <Text style={[
+              styles.navDotText,
+              idx === currentIndex && styles.navDotTextActive,
+              answers[idx] !== null && styles.navDotTextAnswered,
+            ]}>{idx + 1}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={styles.examContent} showsVerticalScrollIndicator={false}>
+        <Text style={styles.questionNum}>Question {currentIndex + 1}</Text>
+        <Text style={styles.questionText}>{question.text}</Text>
+        <View style={styles.optionsContainer}>
+          {question.options.map((opt, idx) => {
+            const isSelected = answers[currentIndex] === idx;
+            return (
+              <Pressable
+                key={idx}
+                style={[styles.examOption, isSelected && styles.examOptionSelected]}
+                onPress={() => {
+                  const newAnswers = [...answers];
+                  newAnswers[currentIndex] = idx;
+                  setAnswers(newAnswers);
+                }}
+              >
+                <View style={[styles.optionLetter, isSelected && { backgroundColor: Colors.primary + '20' }]}>
+                  <Text style={[styles.optionLetterText, isSelected && { color: Colors.primary }]}>
+                    {String.fromCharCode(65 + idx)}
+                  </Text>
+                </View>
+                <Text style={[styles.optionText, isSelected && { color: Colors.primary }]}>{opt}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      <View style={[styles.examBottomBar, { paddingBottom: insets.bottom + 16 }]}>
+        <Pressable
+          style={styles.prevBtn}
+          disabled={currentIndex === 0}
+          onPress={() => setCurrentIndex((i) => i - 1)}
+        >
+          <Feather name="chevron-left" size={18} color={currentIndex === 0 ? Colors.textTertiary : Colors.text} />
+        </Pressable>
+        {currentIndex === questions.length - 1 ? (
           <Pressable style={styles.finishBtn} onPress={() => setFinished(true)}>
             <Text style={styles.finishText}>Finish Exam</Text>
           </Pressable>

@@ -3,6 +3,7 @@ import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -14,29 +15,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-
-const SUBJECTS = [
-  { id: 'math', label: 'Mathematics', icon: 'calculator' as const, color: Colors.subjectMath },
-  { id: 'addmath', label: 'Add Maths', icon: 'function-variant' as const, color: Colors.subjectAddMath },
-  { id: 'bio', label: 'Biology', icon: 'leaf' as const, color: Colors.subjectBio },
-  { id: 'chem', label: 'Chemistry', icon: 'atom' as const, color: Colors.subjectChem },
-  { id: 'physics', label: 'Physics', icon: 'lightning-bolt' as const, color: Colors.subjectPhysics },
-  { id: 'sejarah', label: 'Sejarah', icon: 'book-open-variant' as const, color: Colors.subjectSejarah },
-  { id: 'bm', label: 'Bahasa Melayu', icon: 'translate' as const, color: Colors.subjectBM },
-  { id: 'english', label: 'English', icon: 'alphabetical' as const, color: Colors.subjectEnglish },
-];
-
-const TEACHERS = [
-  { id: '1', name: 'Mr. Lim Wei Hong', subject: 'Add Maths' },
-  { id: '2', name: 'Pn. Farah Nadia', subject: 'Chemistry' },
-  { id: '3', name: 'En. Azman bin Yusof', subject: 'Sejarah' },
-  { id: '4', name: 'Ms. Priya a/p Kumar', subject: 'Biology' },
-];
+import { useSubjects, useTeachers } from '@/lib/hooks/usePractice';
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const webTopPadding = Platform.OS === 'web' ? 67 : 0;
   const [step, setStep] = useState(0);
+
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
+  const { data: teachers = [], isLoading: teachersLoading } = useTeachers();
   const [formLevel, setFormLevel] = useState<string | null>(null);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [schoolSearch, setSchoolSearch] = useState('');
@@ -117,8 +104,11 @@ export default function OnboardingScreen() {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Select your subjects</Text>
             <Text style={styles.stepSubtitle}>Choose the subjects you want to study</Text>
-            <View style={styles.subjectGrid}>
-              {SUBJECTS.map((s) => {
+            {subjectsLoading ? (
+              <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+            ) : (
+              <View style={styles.subjectGrid}>
+                {subjects.map((s) => {
                 const isSelected = selectedSubjects.includes(s.id);
                 return (
                   <Pressable
@@ -139,8 +129,9 @@ export default function OnboardingScreen() {
                     )}
                   </Pressable>
                 );
-              })}
-            </View>
+                })}
+              </View>
+            )}
           </View>
         );
 
@@ -182,7 +173,11 @@ export default function OnboardingScreen() {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Follow teachers</Text>
             <Text style={styles.stepSubtitle}>Get practice sets and tips from your teachers</Text>
-            {TEACHERS.map((t) => {
+            {teachersLoading ? (
+              <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+            ) : (
+              <>
+                {teachers.map((t) => {
               const isFollowed = followedTeachers.includes(t.id);
               return (
                 <View key={t.id} style={styles.teacherRow}>
@@ -203,7 +198,9 @@ export default function OnboardingScreen() {
                   </Pressable>
                 </View>
               );
-            })}
+                })}
+              </>
+            )}
           </View>
         );
 
