@@ -1,0 +1,264 @@
+import React, { useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Flame } from "lucide-react-native";
+
+import { colors } from "../constants/colors";
+
+const TABS = ["School", "National", "Subject"] as const;
+
+const MOCK_SCHOOL_LEADERS = [
+  { rank: 1, name: "Ahmad Lee", avatar: "A", xp: 12500, streak: 14 },
+  { rank: 2, name: "Siti Nur", avatar: "S", xp: 11800, streak: 12 },
+  { rank: 3, name: "Raj Kumar", avatar: "R", xp: 10200, streak: 9 },
+  { rank: 4, name: "Mei Ling", avatar: "M", xp: 9800, streak: 7 },
+  { rank: 5, name: "John Doe", avatar: "J", xp: 9200, streak: 5 },
+];
+
+const MOCK_NATIONAL_LEADERS = [
+  { rank: 1, name: "Zara Ali", avatar: "Z", xp: 25600, streak: 30 },
+  { rank: 2, name: "Wei Chen", avatar: "W", xp: 24100, streak: 28 },
+  { rank: 3, name: "Ahmad Lee", avatar: "A", xp: 22500, streak: 25 },
+];
+
+const MOCK_SCHOOL_RANKINGS = [
+  { rank: 1, name: "SMK Taman Melawati", students: 120, avgXp: 8500 },
+  { rank: 2, name: "SMK Sri Aman", students: 95, avgXp: 8200 },
+  { rank: 3, name: "MRSM Langkawi", students: 80, avgXp: 7900 },
+];
+
+const medalColors = [colors.gold, colors.silver, colors.bronze];
+
+function TopThree({ leaders }: { leaders: typeof MOCK_SCHOOL_LEADERS }) {
+  const top3 = leaders.slice(0, 3);
+  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const heights = [100, 130, 80];
+
+  return (
+    <View style={styles.podiumContainer}>
+      {order.map((person, idx) => {
+        if (!person) return null;
+        const rankIdx = idx === 1 ? 0 : idx === 0 ? 1 : 2;
+        const medalColor = medalColors[rankIdx];
+        return (
+          <View key={person.rank} style={[styles.podiumItem, { marginTop: idx === 1 ? 0 : 24 }]}>
+            <View style={[styles.podiumAvatar, { borderColor: medalColor }]}>
+              <Text style={styles.podiumAvatarText}>{person.avatar}</Text>
+            </View>
+            <Text style={styles.podiumName} numberOfLines={1}>
+              {person.name.split(" ")[0]}
+            </Text>
+            <Text style={styles.podiumXp}>{person.xp.toLocaleString()} XP</Text>
+            <View
+              style={[
+                styles.podiumBar,
+                { height: heights[idx], backgroundColor: medalColor + "40" },
+              ]}
+            >
+              <Text style={[styles.podiumRank, { color: medalColor }]}>#{person.rank}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+export default function LeaderboardScreen() {
+  const insets = useSafeAreaInsets();
+  const webTopPadding = Platform.OS === "web" ? 67 : 0;
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("School");
+
+  const currentLeaders =
+    activeTab === "School" ? MOCK_SCHOOL_LEADERS : MOCK_NATIONAL_LEADERS;
+
+  return (
+    <ScrollView
+      style={[styles.container, { paddingTop: webTopPadding }]}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.title}>Leaderboard</Text>
+      </View>
+
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => (
+          <Pressable
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <TopThree leaders={currentLeaders} />
+
+      <View style={styles.listSection}>
+        <Text style={styles.listTitle}>Full Rankings</Text>
+        {currentLeaders.map((person, idx) => (
+          <View key={person.rank} style={styles.rankRow}>
+            <Text style={styles.rankNum}>{person.rank}</Text>
+            <View
+              style={[
+                styles.rankAvatar,
+                {
+                  backgroundColor:
+                    idx < 3 ? medalColors[idx] + "25" : colors.surfaceAlt,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.rankAvatarText,
+                  { color: idx < 3 ? medalColors[idx] : colors.textSecondary },
+                ]}
+              >
+                {person.avatar}
+              </Text>
+            </View>
+            <View style={styles.rankInfo}>
+              <Text style={styles.rankName}>{person.name}</Text>
+              <View style={styles.rankMeta}>
+                <Flame size={12} color={colors.streak} />
+                <Text style={styles.rankStreak}>{person.streak} day streak</Text>
+              </View>
+            </View>
+            <Text style={styles.rankXp}>{person.xp.toLocaleString()}</Text>
+            <Text style={styles.rankXpLabel}>XP</Text>
+          </View>
+        ))}
+      </View>
+
+      {activeTab === "School" && (
+        <View style={styles.schoolSection}>
+          <Text style={styles.listTitle}>School vs School</Text>
+          {MOCK_SCHOOL_RANKINGS.map((school) => (
+            <View key={school.rank} style={styles.schoolRow}>
+              <Text style={styles.schoolRank}>#{school.rank}</Text>
+              <View style={styles.schoolInfo}>
+                <Text style={styles.schoolName}>{school.name}</Text>
+                <Text style={styles.schoolMeta}>
+                  {school.students} students | Avg {school.avgXp.toLocaleString()} XP
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: 20 },
+  title: { fontSize: 28, fontWeight: "700", color: colors.text },
+  tabBar: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10 },
+  tabActive: { backgroundColor: colors.surface },
+  tabText: { fontSize: 13, fontWeight: "500", color: colors.textSecondary },
+  tabTextActive: { color: colors.primary, fontWeight: "600" },
+  podiumContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    marginTop: 24,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  podiumItem: { alignItems: "center", flex: 1 },
+  podiumAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2.5,
+  },
+  podiumAvatarText: { fontSize: 18, fontWeight: "700", color: colors.primary },
+  podiumName: { fontSize: 12, fontWeight: "600", color: colors.text, marginTop: 6 },
+  podiumXp: { fontSize: 11, fontWeight: "500", color: colors.textSecondary, marginTop: 2 },
+  podiumBar: {
+    width: "100%",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    marginTop: 8,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingTop: 10,
+  },
+  podiumRank: { fontSize: 18, fontWeight: "700" },
+  listSection: { marginTop: 32, paddingHorizontal: 20 },
+  listTitle: { fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 },
+  rankRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  rankNum: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textTertiary,
+    width: 24,
+    textAlign: "center",
+  },
+  rankAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  rankAvatarText: { fontSize: 16, fontWeight: "600" },
+  rankInfo: { flex: 1, marginLeft: 12 },
+  rankName: { fontSize: 14, fontWeight: "600", color: colors.text },
+  rankMeta: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
+  rankStreak: { fontSize: 11, color: colors.textTertiary },
+  rankXp: { fontSize: 16, fontWeight: "700", color: colors.primary },
+  rankXpLabel: { fontSize: 10, fontWeight: "500", color: colors.textSecondary, marginLeft: 2 },
+  schoolSection: { marginTop: 28, paddingHorizontal: 20 },
+  schoolRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  schoolRank: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
+    width: 36,
+    textAlign: "center",
+  },
+  schoolInfo: { flex: 1, marginLeft: 8 },
+  schoolName: { fontSize: 14, fontWeight: "600", color: colors.text },
+  schoolMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+});
