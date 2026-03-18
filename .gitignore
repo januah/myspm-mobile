@@ -39,3 +39,4 @@ yarn-error.log*
 expo-env.d.ts
 # @end expo-cli
 /react_native/android
+/NEW_CODE_SYUKRAN/android
