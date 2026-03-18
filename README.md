@@ -1,4 +1,4 @@
-# MySPM Mobile
+# MySPM Mobile (APPLICATBLE TO "OLD CODE" FOLDER ONLY)
 
 A React Native mobile application for exam management, built with Expo and TypeScript.
 
@@ -25,7 +25,7 @@ A React Native mobile application for exam management, built with Expo and TypeS
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd MySPM-mobile
+cd MySPM-mobile/OLD_CODE
 ```
 
 2. Install dependencies:
